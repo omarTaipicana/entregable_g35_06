@@ -9,16 +9,17 @@ const getAll = catchError(async (req, res) => {
   const { cityId, name } = req.query;
   const where = {};
   if (cityId) where.cityId = cityId;
-  if (cityId) where.name = { [Op.iLike]: `%<${name}%` };
+  if (name) where.name = { [Op.iLike]: `%${name}%` };
 
   const results = await Hotel.findAll({
     where: where,
-    raw: true,
-    nest: true,
-    include: [Image, City]
+    // raw: true,
+    // nest: true,
+    include: [Image, City],
   });
 
   const hotelWithAvgPromises = results.map(async (hotel) => {
+    const hotelJson = hotel.toJSON();
     const reviews = await Review.findAll({
       where: {
         hotelId: hotel.id,
@@ -30,7 +31,7 @@ const getAll = catchError(async (req, res) => {
     });
 
     return {
-      ...hotel,
+      ...hotelJson,
       average: +(average / reviews.length).toFixed(2),
       // reviews,
     };
@@ -46,7 +47,7 @@ const create = catchError(async (req, res) => {
 
 const getOne = catchError(async (req, res) => {
   const { id } = req.params;
-  const result = await Hotel.findByPk(id);
+  const result = await Hotel.findByPk(id, {include:[City, Image]});
   if (!result) return res.sendStatus(404);
   return res.json(result);
 });
